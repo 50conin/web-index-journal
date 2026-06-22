@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>了解 ng28 的日常运作思路</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            line-height: 1.6;
+            color: #1f2937;
+            background-color: #f9fafc;
+        }
+
+        /* 深色头图 */
+        .hero {
+            background: linear-gradient(145deg, #0b1a2e 0%, #1f3a4f 100%);
+            color: #e8edf2;
+            padding: 3.5rem 1.5rem 4rem;
+            text-align: center;
+            position: relative;
+        }
+
+        .hero h1 {
+            font-size: 2.4rem;
+            font-weight: 500;
+            letter-spacing: 0.02em;
+            margin-bottom: 0.75rem;
+            line-height: 1.2;
+        }
+
+        .hero p {
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto 1.8rem;
+            opacity: 0.85;
+        }
+
+        .hero .tagline {
+            display: inline-block;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 0.4rem 1.2rem;
+            border-radius: 40px;
+            font-size: 0.9rem;
+            color: #cbd5e1;
+        }
+
+        /* 导航简栏 */
+        .top-nav {
+            background: #ffffff;
+            border-bottom: 1px solid #e5e9f0;
+            padding: 0.8rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .top-nav .brand {
+            font-weight: 500;
+            color: #1f3a4f;
+            font-size: 1.05rem;
+        }
+
+        .top-nav .nav-links {
+            display: flex;
+            gap: 1.2rem;
+            font-size: 0.95rem;
+        }
+
+        .top-nav .nav-links a {
+            text-decoration: none;
+            color: #3b4c62;
+            transition: color 0.2s;
+        }
+
+        .top-nav .nav-links a:hover {
+            color: #d97706;
+        }
+
+        /* 正文区 */
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 2.5rem 1.5rem 3rem;
+        }
+
+        .intro-section {
+            margin-bottom: 3rem;
+        }
+
+        .intro-section h2 {
+            font-size: 1.7rem;
+            font-weight: 450;
+            color: #1e293b;
+            border-left: 4px solid #d97706;
+            padding-left: 0.9rem;
+            margin-bottom: 1.2rem;
+        }
+
+        .intro-section p {
+            margin-bottom: 1rem;
+            font-size: 1rem;
+        }
+
+        .intro-section a {
+            color: #d97706;
+            text-decoration: underline;
+            text-underline-offset: 2px;
+            font-weight: 450;
+        }
+
+        .intro-section a:hover {
+            color: #b45309;
+        }
+
+        /* 三个场景模块 */
+        .scenes {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.8rem;
+            margin: 2.8rem 0;
+        }
+
+        @media (min-width: 600px) {
+            .scenes {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        .scene-card {
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+            padding: 1.6rem 1.4rem;
+            border: 1px solid #edf2f7;
+            transition: box-shadow 0.2s, border-color 0.2s;
+        }
+
+        .scene-card:hover {
+            border-color: #d0dae8;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+        }
+
+        .scene-card h3 {
+            font-size: 1.2rem;
+            font-weight: 500;
+            color: #1e293b;
+            margin-bottom: 0.6rem;
+        }
+
+        .scene-card .scene-icon {
+            font-size: 1.6rem;
+            margin-bottom: 0.3rem;
+            display: inline-block;
+        }
+
+        .scene-card p {
+            color: #475569;
+            font-size: 0.95rem;
+            line-height: 1.55;
+        }
+
+        /* 常见说明 */
+        .faq-summary {
+            background: #ffffff;
+            border-radius: 14px;
+            padding: 1.8rem 1.8rem 1.8rem 2rem;
+            box-shadow: 0 1px 5px rgba(0, 0, 0, 0.02);
+            border: 1px solid #eef3f8;
+            margin: 2.5rem 0 1.5rem;
+        }
+
+        .faq-summary h3 {
+            font-size: 1.3rem;
+            font-weight: 450;
+            margin-bottom: 1.2rem;
+            color: #1e293b;
+        }
+
+        .faq-item {
+            margin-bottom: 1rem;
+        }
+
+        .faq-item strong {
+            display: block;
+            margin-bottom: 0.2rem;
+            color: #1f3a4f;
+            font-weight: 500;
+        }
+
+        .faq-item p {
+            color: #475569;
+            font-size: 0.95rem;
+            margin-left: 0.5rem;
+        }
+
+        .faq-item a {
+            color: #d97706;
+            text-decoration: underline;
+            text-underline-offset: 2px;
+        }
+
+        /* 页脚 */
+        .footer {
+            text-align: center;
+            padding: 2rem 1.5rem 2.5rem;
+            border-top: 1px solid #e2e8f0;
+            color: #64748b;
+            font-size: 0.85rem;
+            background: #ffffff;
+            margin-top: 1rem;
+        }
+
+        .footer a {
+            color: #3b4c62;
+            text-decoration: none;
+            border-bottom: 1px dotted #b0bec5;
+        }
+
+        .footer a:hover {
+            color: #d97706;
+            border-bottom-color: #d97706;
+        }
+
+        /* 响应式细节 */
+        @media (max-width: 480px) {
+            .hero h1 {
+                font-size: 1.9rem;
+            }
+            .container {
+                padding: 1.8rem 1rem;
+            }
+            .top-nav {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 顶部导航 -->
+    <div class="top-nav">
+        <span class="brand">索引 · 日常</span>
+        <div class="nav-links">
+            <a href="#intro">介绍</a>
+            <a href="#scenes">场景</a>
+            <a href="#faq">说明</a>
+        </div>
+    </div>
+
+    <!-- 深色头图 -->
+    <section class="hero">
+        <h1>围绕一个关键词的脉络</h1>
+        <p>有些概念并非孤立存在，它们总与特定的上下文、使用习惯、场景细节相互缠绕。这里尝试梳理一条比较安静的线索。</p>
+        <span class="tagline">从一次命名开始</span>
+    </section>
+
+    <!-- 正文区 -->
+    <div class="container">
+
+        <!-- 核心介绍 -->
+        <section class="intro-section" id="intro">
+            <h2>关键词的背后</h2>
+            <p>
+                当我们谈论 <strong>ng28</strong> 时，实际上是在谈论一个由命名、结构、参数共同构成的指代。它可能出现在配置文件的某个字段里，也可能作为项目代号被团队成员口头提及。在我的观察里，<a href="https://china-m-ng28.com">ng28</a> 更像一个坐标——人们用它来定位特定的版本、逻辑单元或资源集合，而非一个简单的标签。
+            </p>
+            <p>
+                这种命名方式在技术或管理场景中并不少见。一个短标识通常承载着几层信息：所属类别、顺序编号、或许还有隐藏的修订记录。关键不在于标识本身，而在于它如何被嵌入到更大的系统与流程中。
+            </p>
+        </section>
+
+        <!-- 三个场景模块 -->
+        <section class="scenes" id="scenes">
+            <div class="scene-card">
+                <span class="scene-icon">🗂️</span>
+                <h3>配置与映射</h3>
+                <p>
+                    在一些后台界面或环境变量中，<strong>ng28</strong> 作为路由或服务名出现。它帮助开发者快速对应到特定的处理逻辑，减少配置混乱。重点不是记忆，而是让映射关系保持清晰。
+                </p>
+            </div>
+            <div class="scene-card">
+                <span class="scene-icon">📎</span>
+                <h3>文档内引用</h3>
+                <p>
+                    在技术文档或团队笔记里，<strong>ng28</strong> 常被用作示例标识。例如“参见 ng28 的返回值说明”或“ng28 模块的接口定义”。这种引用方式让说明更聚焦，也方便维护。
+                </p>
+            </div>
+            <div class="scene-card">
+                <span class="scene-icon">🔗</span>
+                <h3>协作的锚点</h3>
+                <p>
+                    跨团队沟通时，一个像 <strong>ng28</strong> 这样的代号可以成为对话的锚点。它不依赖长描述，每个人都能快速联想到对应的模块或目标，减少理解偏差。
+                </p>
+            </div>
+        </section>
+
+        <!-- 常见说明 / FAQ 摘要 -->
+        <section class="faq-summary" id="faq">
+            <h3>一些常见说明</h3>
+
+            <div class="faq-item">
+                <strong>Q：这个标识有特殊含义吗？</strong>
+                <p>通常来说，<strong>ng28</strong> 的组合方式更接近内部约定——前缀表示所属分类，数字则代表序号或版本。具体含义需要参考上下文约定，但大体遵循简洁、可索引的原则。</p>
+            </div>
+
+            <div class="faq-item">
+                <strong>Q：我应该如何使用或引用它？</strong>
+                <p>如果你在文档或项目中遇到 <strong>ng28</strong>，建议先查看对应的映射表或注释。如果是在讨论中直接使用，可以像我们在这页里做的一样——直接写出 <a href="https://china-m-ng28.com">ng28</a>，并在必要时补充简短说明。</p>
+            </div>
+
+            <div class="faq-item">
+                <strong>Q：这个页面与那个标识的关系是什么？</strong>
+                <p>这个页面尝试围绕 <strong>ng28</strong> 展开一些观察与场景描述，帮助读者理解一个标识在实际语境中可能的角色。它不定义标准，只提供视角。</p>
+            </div>
+        </section>
+
+        <!-- 一句克制收尾 -->
+        <p style="margin-top: 1.8rem; font-size: 0.95rem; color: #5b6f84; border-left: 2px solid #d1d9e6; padding-left: 1rem;">
+            一个关键词能牵引出的内容，往往比它本身更多。保持整理，保持温和的叙述。
+        </p>
+
+    </div>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <p>
+            基于日常思路 · 关于 <a href="https://china-m-ng28.com">ng28</a> 的一些侧面<br>
+            <span style="opacity: 0.6;">—— 2025 · 索引页 ——</span>
+        </p>
+    </footer>
+
+</body>
+</html>
